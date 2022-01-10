@@ -2,16 +2,29 @@ import { InitialValue } from '../../types/initial-value';
 import { FieldController } from './field-controller';
 import { Field } from './field';
 import { FieldError } from '../../types/field-error';
+import { ISubscriber, Observable } from 'open-observable';
 
 export class FieldList {
-    private readonly fields: Record<string, FieldController>;
+    private readonly _fields: Record<string, FieldController>;
+    private readonly _changes: Observable<number>;
+    private readonly _totalChanges: Observable<number>;
 
     constructor() {
-        this.fields = {};
+        this._fields = {};
+        this._changes = new Observable<number>(0);
+        this._totalChanges = new Observable<number>(0);
     }
 
     public reset() {
-        Object.values(this.fields).forEach((x) => x.reset());
+        Object.values(this._fields).forEach((x) => x.reset());
+    }
+
+    public get changes(): ISubscriber<number> {
+        return this._changes.asSubscriber();
+    }
+
+    public get totalChanges(): ISubscriber<number> {
+        return this._totalChanges.asSubscriber();
     }
 
     public fromObject(object: any): void {
@@ -20,7 +33,7 @@ export class FieldList {
     }
 
     private extractAndClear(object: any) {
-        const oldNames = new Set(Object.keys(this.fields));
+        const oldNames = new Set(Object.keys(this._fields));
 
         this.deepExtract(oldNames, object, '');
 
@@ -40,7 +53,7 @@ export class FieldList {
     }
 
     private clear() {
-        const fields = Object.values(this.fields);
+        const fields = Object.values(this._fields);
 
         for (const field of fields) {
             const initial = field.initial;
@@ -52,9 +65,13 @@ export class FieldList {
 
     public toObject(): any {
         const building = {} as any;
-        const entries = Object.entries(this.fields);
+        const entries = Object.entries(this._fields);
 
         for (const [key, field] of entries) {
+            const value = field.value.current();
+
+            if (value === null) continue;
+
             const spl = key.split('.');
 
             let path = building;
@@ -67,7 +84,7 @@ export class FieldList {
                 }
             }
 
-            path[spl[spl.length - 1]] = field.value.current();
+            path[spl[spl.length - 1]] = value;
         }
 
         return building;
@@ -88,7 +105,7 @@ export class FieldList {
     }
 
     private getAndSetInitialValue(name: string, initial: InitialValue): FieldController | undefined {
-        const controller = this.fields[name];
+        const controller = this._fields[name];
 
         if (!controller) return undefined;
 
@@ -98,6 +115,14 @@ export class FieldList {
     }
 
     private create(name: string, initial: InitialValue | undefined): FieldController {
-        return (this.fields[name] = new FieldController(initial));
+        const field = (this._fields[name] = new FieldController(initial));
+
+        field.changed.subscribe((value, prev) =>
+            this._changes.next((old) => (value && !prev ? old + 1 : !value && prev ? old - 1 : old))
+        );
+
+        field.value.subscribe(() => this._totalChanges.next((old) => old + 1));
+
+        return field;
     }
 }

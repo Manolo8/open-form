@@ -6,6 +6,7 @@ export { isFormSubmitInput } from './other/form-submit-input';
 
 export { Form } from './components/form';
 export { value, Value } from './components/value';
+export { valueChange, ValueChange } from './components/value-change';
 export { FormConfig } from './components/form-config';
 
 export { Field } from './other/form-options/field';

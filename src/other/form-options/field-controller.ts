@@ -12,7 +12,7 @@ export class FieldController<T = any> extends Field<T> {
 
     public next(value: Dispatch<T>) {
         super.next(value);
-        this._changed.next(value === (this.defaultValue === undefined ? this._initial : this.defaultValue));
+        this._changed.next(value !== (this.defaultValue === undefined ? this._initial : this.defaultValue));
     }
 
     public nextDefault(value?: T) {

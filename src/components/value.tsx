@@ -8,7 +8,7 @@ type Render<T> = (
     value: T,
     setValue: (value: Dispatch<T>) => void,
     error: string | string[] | null
-) => ReactElement | undefined | null | void;
+) => ReactElement | undefined | null | void | boolean;
 
 type Props = {
     name: string;

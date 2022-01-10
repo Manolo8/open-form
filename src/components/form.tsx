@@ -20,6 +20,23 @@ export const Form = forwardRef<HTMLDivElement, Props>(({ children, handler, ...r
     const [form] = useState(() => new FormControl(handlerRef, config.asSubscriber()));
 
     useEffect(() => {
+        if (handler.autoSubmit === undefined) return;
+
+        let timeoutId = 0;
+
+        const cleanSubscriber = form.totalChanges.subscribe(() => {
+            clearTimeout(timeoutId);
+
+            setTimeout(() => form.submit(), typeof handler.autoSubmit === 'number' ? handler.autoSubmit : 0);
+        });
+
+        return () => {
+            cleanSubscriber();
+            clearTimeout(timeoutId);
+        };
+    }, [handler]);
+
+    useEffect(() => {
         form.load();
 
         const element = ref.current;

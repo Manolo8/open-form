@@ -60,6 +60,14 @@ export class FormControl {
         return this._loading.asSubscriber();
     }
 
+    public get changes(): ISubscriber<number> {
+        return this._fields.changes;
+    }
+
+    public get totalChanges(): ISubscriber<number> {
+        return this._fields.totalChanges;
+    }
+
     public load() {
         const handler = this._handlerRef.current;
 

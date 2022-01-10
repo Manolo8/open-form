@@ -6,4 +6,5 @@ export type FormHandler<TInput, TOutput> = {
     success?: (output: TOutput, input: TInput) => SuccessResult<TInput> | void;
     error?: (error: any, input: TInput) => void;
     additional?: (input: TInput) => Partial<TInput>;
+    autoSubmit?: boolean | number;
 };
