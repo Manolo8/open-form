@@ -1,18 +1,19 @@
-import { InitialValue } from '../../types/initial-value';
+import { InitialValue } from '../types/initial-value';
 import { FieldController } from './field-controller';
 import { Field } from './field';
-import { FieldError } from '../../types/field-error';
+import { FieldError } from '../types/field-error';
 import { ISubscriber, Observable } from 'open-observable';
+import { LastChange } from '../types/last-change';
 
 export class FieldList {
     private readonly _fields: Record<string, FieldController>;
     private readonly _changes: Observable<number>;
-    private readonly _totalChanges: Observable<number>;
+    private readonly _lastChange: Observable<LastChange>;
 
     constructor() {
         this._fields = {};
         this._changes = new Observable<number>(0);
-        this._totalChanges = new Observable<number>(0);
+        this._lastChange = new Observable({ name: '', value: '', oldValue: '' });
     }
 
     public reset() {
@@ -23,8 +24,8 @@ export class FieldList {
         return this._changes.asSubscriber();
     }
 
-    public get totalChanges(): ISubscriber<number> {
-        return this._totalChanges.asSubscriber();
+    public get lastChange(): ISubscriber<LastChange> {
+        return this._lastChange.asSubscriber();
     }
 
     public fromObject(object: any): void {
@@ -121,7 +122,9 @@ export class FieldList {
             this._changes.next((old) => (value && !prev ? old + 1 : !value && prev ? old - 1 : old))
         );
 
-        field.value.subscribe(() => this._totalChanges.next((old) => old + 1));
+        field.value.subscribe((value, oldValue) => {
+            this._lastChange.next({ name, value, oldValue });
+        });
 
         return field;
     }

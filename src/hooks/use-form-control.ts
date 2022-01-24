@@ -1,7 +1,7 @@
 import { useContext } from 'react';
-import { FormControl } from '../other/form-options/form-control';
+import { FormControl } from '../other/form-control';
 import { FormContext } from '../state/form-context';
 
-export const useFormControl = (): FormControl => {
+export const useFormControl = (): FormControl<any, any> => {
     return useContext(FormContext);
 };

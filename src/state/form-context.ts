@@ -1,4 +1,4 @@
 import { createContext } from 'react';
-import { FormControl } from '../other/form-options/form-control';
+import { FormControl } from '../other/form-control';
 
-export const FormContext = createContext<FormControl>(null as unknown as any);
+export const FormContext = createContext<FormControl<any, any>>(null as unknown as any);

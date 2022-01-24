@@ -1,44 +1,39 @@
 import { listen, useGlobalObservable } from 'open-observable';
 import React, { forwardRef, HTMLAttributes, useEffect, useRef, useState } from 'react';
 import { formConfigKey } from '../other/form-config-key';
-import { FormControl } from '../other/form-options/form-control';
+import { FormControl } from '../other/form-control';
 import { FormContext } from '../state/form-context';
 import { FormHandler } from '../types/form-handler';
 import { dualRef } from '../util/dual-ref';
 import { isEnterSubmit } from '../util/is-enter-submit';
 import { isSubmitEnabled } from '../util/is-submit-enabled';
+import { Configurator } from 'open-observable';
 
 type Props = { handler: FormHandler<any, any> } & HTMLAttributes<HTMLDivElement>;
 
 export const Form = forwardRef<HTMLDivElement, Props>(({ children, handler, ...rest }, forwardedRef) => {
     const ref = useRef<HTMLDivElement>(null);
-    const handlerRef = useRef<FormHandler<any, any>>(handler);
+    const handlerRef = useRef<(input: any) => Promise<any> | any>(handler.submit);
     const config = useGlobalObservable(formConfigKey);
 
-    handlerRef.current = handler;
+    handlerRef.current = handler.submit;
 
-    const [form] = useState(() => new FormControl(handlerRef, config.asSubscriber()));
+    const [{ form, configurator }] = useState(() => {
+        const form = new FormControl(handlerRef, config.asSubscriber());
+        const configurator = new Configurator(form);
 
-    useEffect(() => {
-        if (handler.autoSubmit === undefined) return;
-
-        let timeoutId = 0;
-
-        const cleanSubscriber = form.totalChanges.subscribe(() => {
-            clearTimeout(timeoutId);
-
-            setTimeout(() => form.submit(), typeof handler.autoSubmit === 'number' ? handler.autoSubmit : 0);
-        });
-
-        return () => {
-            cleanSubscriber();
-            clearTimeout(timeoutId);
-        };
-    }, [handler]);
+        return { form, configurator };
+    });
 
     useEffect(() => {
-        form.load();
+        handler.configurator(configurator);
 
+        return () => configurator.reset();
+    }, [handler.configurator]);
+
+    useEffect(() => form.cleanup, [form]);
+
+    useEffect(() => {
         const element = ref.current;
 
         if (!element) return;

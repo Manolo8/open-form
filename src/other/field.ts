@@ -1,6 +1,6 @@
-import { InitialValue } from '../../types/initial-value';
+import { InitialValue } from '../types/initial-value';
 import { Dispatch, ISubscriber, Observable } from 'open-observable';
-import { FieldError } from '../../types/field-error';
+import { FieldError } from '../types/field-error';
 
 export class Field<T = any> {
     protected _initial: InitialValue<T>;

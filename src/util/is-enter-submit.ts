@@ -1,5 +1,16 @@
-const nonSubmitTags = new Set(['TEXTAREA', 'BUTTON']);
-const inputSubmitTypes = new Set(['text', 'password', 'email', 'number', 'search', 'tel', 'url', 'week']);
+const nonSubmitTags = new Set(['TEXTAREA', 'BUTTON', 'A']);
+const inputSubmitTypes = new Set([
+    'text',
+    'password',
+    'email',
+    'number',
+    'search',
+    'tel',
+    'url',
+    'week',
+    'checkbox',
+    'radio',
+]);
 
 export const isEnterSubmit = (event: KeyboardEvent): boolean => {
     const target = event.target as HTMLElement | null;

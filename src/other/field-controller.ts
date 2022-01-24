@@ -1,6 +1,6 @@
 import { Field } from './field';
-import { InitialValue } from '../../types/initial-value';
-import { FieldError } from '../../types/field-error';
+import { InitialValue } from '../types/initial-value';
+import { FieldError } from '../types/field-error';
 import { Dispatch } from 'open-observable';
 
 export class FieldController<T = any> extends Field<T> {
