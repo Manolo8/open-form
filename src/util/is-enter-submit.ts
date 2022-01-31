@@ -23,5 +23,7 @@ export const isEnterSubmit = (event: KeyboardEvent): boolean => {
         if (inputSubmitTypes.has(type)) return true;
     }
 
+    if (target.isContentEditable) return false;
+
     return !nonSubmitTags.has(target.tagName);
 };

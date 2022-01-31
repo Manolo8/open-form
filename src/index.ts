@@ -1,6 +1,7 @@
 export { useField } from './hooks/use-field';
 export { useForm } from './hooks/use-form';
 export { useFormControl } from './hooks/use-form-control';
+export { useFormResolver } from './hooks/use-form-resolver';
 
 export { isFormSubmitInput } from './other/form-submit-input';
 

@@ -11,6 +11,7 @@ import { RefObject } from 'react';
 import { LastChange } from '../types/last-change';
 import { AutoSubmitOptions } from '../types/auto-submit-options';
 import { nameof } from 'ts-simple-nameof';
+import { CleanupCallback } from 'open-observable/build/types/cleanup-callback';
 
 export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOutput> {
     private readonly _errorTranslator: ISubscriber<FormConfigType>;
@@ -22,6 +23,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     private _error?: (input: TInput, formErrors?: KnownFormError) => void;
     private _additional?: (input: TInput) => TInput;
     private _autoSubmitCleanup?: () => void;
+    private _resolvers: (() => Promise<boolean>)[];
 
     constructor(
         submit: RefObject<(input: TInput) => Promise<TOutput> | TOutput>,
@@ -31,6 +33,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         this._errorTranslator = errorTranslator;
         this._fields = new FieldList();
         this._loading = new Observable<boolean>(false);
+        this._resolvers = [];
 
         this.setAdditional = this.setAdditional.bind(this);
         this.setError = this.setError.bind(this);
@@ -43,6 +46,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         this.reset = this.reset.bind(this);
         this.handleSuccess = this.handleSuccess.bind(this);
         this.handleError = this.handleError.bind(this);
+        this.addResolver = this.addResolver.bind(this);
     }
 
     public setSuccess(callback: (output: TOutput, input: TInput) => void | SuccessResult<TInput>): void {
@@ -80,10 +84,6 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         }
     }
 
-    public cleanup() {
-        this._autoSubmitCleanup?.();
-    }
-
     public load(value: Partial<TInput> | Promise<Partial<TInput>>) {
         this._loading.next(true);
 
@@ -91,6 +91,16 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
             this._loading.next(false);
             this._fields.fromObject(value);
         });
+    }
+
+    public cleanup() {
+        this._autoSubmitCleanup?.();
+    }
+
+    public addResolver(resolver: () => Promise<boolean>): CleanupCallback {
+        this._resolvers.push(resolver);
+
+        return () => this._resolvers.splice(this._resolvers.indexOf(resolver), 1);
     }
 
     public field(name: string, initial?: InitialValue) {
@@ -106,21 +116,27 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
 
         this._loading.next(true);
 
-        let input = this._fields.toObject() as TInput;
-
-        if (this._additional) input = this._additional(input);
-
-        setFormSubmitInput(input);
-
-        Promise.resolve(submit(input))
-            .then((output) => {
-                this.handleSuccess(output, input);
+        this.resolve().then((value) => {
+            if (!value) {
                 this._loading.next(false);
-            })
-            .catch((error) => {
-                this.handleError(error, input);
-                this._loading.next(false);
-            });
+                return;
+            }
+            let input = this._fields.toObject() as TInput;
+
+            if (this._additional) input = this._additional(input);
+
+            setFormSubmitInput(input);
+
+            Promise.resolve(submit(input))
+                .then((output) => {
+                    this.handleSuccess(output, input);
+                    this._loading.next(false);
+                })
+                .catch((error) => {
+                    this.handleError(error, input);
+                    this._loading.next(false);
+                });
+        });
     }
 
     public reset() {
@@ -166,5 +182,13 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         if (translated) this._fields.error(translated);
 
         if (this._error) this._error(input, translated);
+    }
+
+    private resolve(): Promise<boolean> {
+        const resolvers = this._resolvers.map((x) => x());
+
+        if (!resolvers.length) return Promise.resolve(true);
+
+        return Promise.all(resolvers).then((x) => !x.find((y) => !y));
     }
 }

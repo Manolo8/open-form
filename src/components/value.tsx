@@ -25,7 +25,7 @@ export const Value: VFC<Props> = ({ name, render, defaultValue }) => {
     return render(value, field.next, error) ?? (null as any);
 };
 
-export const value = <T extends {}, P extends {}>(
+export const value = <T, P>(
     model: ModelExpSelector<T>,
     selector: ((value: T) => P) | [(value: T) => P, P],
     render: Render<P>

@@ -25,7 +25,7 @@
     "sourceMap": true,
     /* Generates corresponding '.map' file. */
     // "outFile": "./",                       /* Concatenate and emit output to single file. */
-    //    "outDir": "C:/Users/willians/source/repos/Docspider/src/Docspider.Web.Mvc/node_modules/m-open-form/build",
+//        "outDir": "C:/Users/willians/source/repos/Docspider/src/Docspider.Web.Mvc/node_modules/m-open-form/build",
     //            "outDir": "C:/Users/willians/RiderProjects/Attendant/WebApp/ClientApp/node_modules/m-open-form/build",
     "outDir": "./build",
     /* Redirect output structure to the directory. */
