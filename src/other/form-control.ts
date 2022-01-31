@@ -189,6 +189,6 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
 
         if (!resolvers.length) return Promise.resolve(true);
 
-        return Promise.all(resolvers).then((x) => !x.find((y) => !y));
+        return Promise.all(resolvers).then((x) => !x.includes(false));
     }
 }
