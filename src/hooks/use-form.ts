@@ -1,13 +1,30 @@
-import { ModelExpSelector } from '../types/model-exp-selector';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { nameof } from 'ts-simple-nameof';
-import { IConfigurator } from 'open-observable';
+import { IConfigurator, Configurator, useGlobalObservable } from 'open-observable';
+import { ModelExpSelector } from '../types/model-exp-selector';
 import { IFormConfigure } from '../types/i-form-configure';
-import { FormHandler } from '../types/form-handler';
+import { FormControl } from '../other/form-control';
+import { formConfigKey } from '../other/form-config-key';
 
 export const useForm = <TInput, TOutput>(
     submit: (input: TInput) => Promise<TOutput> | TOutput,
-    configurator: (configurator: IConfigurator<IFormConfigure<TInput, TOutput>>) => void
-): [ModelExpSelector<TInput>, FormHandler<TInput, TOutput>] => {
-    return useMemo(() => [nameof, { submit, configurator }], []);
+    configure?: (configurator: IConfigurator<IFormConfigure<TInput, TOutput>>) => void
+): [ModelExpSelector<TInput>, FormControl<TInput, TOutput>] => {
+    const config = useGlobalObservable(formConfigKey);
+
+    const [{ form, configurator }] = useState(() => {
+        const form = new FormControl(submit, config);
+        const configurator = new Configurator(form);
+
+        configure?.(configurator);
+
+        return { form, configurator };
+    });
+
+    useEffect(() => {
+
+        return () => configurator.reset();
+    }, [configure]);
+
+    return useMemo(() => [nameof, form], []);
 };

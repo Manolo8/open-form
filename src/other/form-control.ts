@@ -7,7 +7,6 @@ import { setFormSubmitInput } from './form-submit-input';
 import { IFormConfigure } from '../types/i-form-configure';
 import { SuccessResult } from '../types/success-result';
 import { KnownFormError } from '../types/known-form-error';
-import { RefObject } from 'react';
 import { LastChange } from '../types/last-change';
 import { AutoSubmitOptions } from '../types/auto-submit-options';
 import { nameof } from 'ts-simple-nameof';
@@ -17,22 +16,21 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     private readonly _errorTranslator: ISubscriber<FormConfigType>;
     private readonly _fields: FieldList;
     private readonly _loading: Observable<boolean>;
+    private readonly _submitting: Observable<boolean>;
 
-    private _submit: RefObject<(input: TInput) => Promise<TOutput> | TOutput>;
+    private _submit: (input: TInput) => Promise<TOutput> | TOutput;
     private _success?: (output: TOutput, input: TInput) => void | SuccessResult<TInput>;
     private _error?: (input: TInput, formErrors?: KnownFormError) => void;
     private _additional?: (input: TInput) => TInput;
     private _autoSubmitCleanup?: () => void;
     private _resolvers: (() => Promise<boolean>)[];
 
-    constructor(
-        submit: RefObject<(input: TInput) => Promise<TOutput> | TOutput>,
-        errorTranslator: ISubscriber<FormConfigType>
-    ) {
+    constructor(submit: (input: TInput) => Promise<TOutput> | TOutput, errorTranslator: ISubscriber<FormConfigType>) {
         this._submit = submit;
         this._errorTranslator = errorTranslator;
         this._fields = new FieldList();
         this._loading = new Observable<boolean>(false);
+        this._submitting = new Observable<boolean>(false);
         this._resolvers = [];
 
         this.setAdditional = this.setAdditional.bind(this);
@@ -87,9 +85,15 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     public load(value: Partial<TInput> | Promise<Partial<TInput>>) {
         this._loading.next(true);
 
-        Promise.resolve(value).then((value) => {
-            this._loading.next(false);
-            this._fields.fromObject(value);
+        const resolver = Promise.resolve(value).then((data) => {
+            if (!data) return this._loading.next(false);
+
+            return this._fields.fromObject(data);
+        });
+
+        resolver.then(() => {
+            //release the load thread
+            setTimeout(() => this._loading.next(false), 100);
         });
     }
 
@@ -108,17 +112,17 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     }
 
     public submit() {
-        if (this._loading.current()) return;
+        if (this._loading.current() || this._submitting.current()) return;
 
-        const submit = this._submit.current;
+        const submit = this._submit;
 
         if (!submit) return;
 
-        this._loading.next(true);
+        this._submitting.next(true);
 
         this.resolve().then((value) => {
             if (!value) {
-                this._loading.next(false);
+                this._submitting.next(false);
                 return;
             }
             let input = this._fields.toObject() as TInput;
@@ -130,13 +134,17 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
             Promise.resolve(submit(input))
                 .then((output) => {
                     this.handleSuccess(output, input);
-                    this._loading.next(false);
+                    this._submitting.next(false);
                 })
                 .catch((error) => {
                     this.handleError(error, input);
-                    this._loading.next(false);
+                    this._submitting.next(false);
                 });
         });
+    }
+
+    public get submitting(): ISubscriber<boolean> {
+        return this._submitting.asSubscriber();
     }
 
     public reset() {
@@ -176,7 +184,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     }
 
     private handleError(error: FormError, input: TInput) {
-        const translator = this._errorTranslator?.current();
+        const translator = this._errorTranslator.current();
         const translated = translator.errorTranslate?.(error) ?? undefined;
 
         if (translated) this._fields.error(translated);

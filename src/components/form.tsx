@@ -3,33 +3,17 @@ import React, { forwardRef, HTMLAttributes, useEffect, useRef, useState } from '
 import { formConfigKey } from '../other/form-config-key';
 import { FormControl } from '../other/form-control';
 import { FormContext } from '../state/form-context';
-import { FormHandler } from '../types/form-handler';
 import { dualRef } from '../util/dual-ref';
 import { isEnterSubmit } from '../util/is-enter-submit';
 import { isSubmitEnabled } from '../util/is-submit-enabled';
-import { Configurator } from 'open-observable';
 
-type Props = { handler: FormHandler<any, any> } & HTMLAttributes<HTMLDivElement>;
+type Props = HTMLAttributes<HTMLDivElement> & {
+    control: FormControl<any, any>;
+};
 
-export const Form = forwardRef<HTMLDivElement, Props>(({ children, handler, ...rest }, forwardedRef) => {
+export const Form = forwardRef<HTMLDivElement, Props>(({ children, control: form, ...rest }, forwardedRef) => {
     const ref = useRef<HTMLDivElement>(null);
-    const handlerRef = useRef<(input: any) => Promise<any> | any>(handler.submit);
     const config = useGlobalObservable(formConfigKey);
-
-    handlerRef.current = handler.submit;
-
-    const [{ form, configurator }] = useState(() => {
-        const form = new FormControl(handlerRef, config.asSubscriber());
-        const configurator = new Configurator(form);
-
-        return { form, configurator };
-    });
-
-    useEffect(() => {
-        handler.configurator(configurator);
-
-        return () => configurator.reset();
-    }, [handler.configurator]);
 
     useEffect(() => form.cleanup, [form]);
 
