@@ -12,8 +12,12 @@ export const useForm = <TInput, TOutput>(
 ): [ModelExpSelector<TInput>, FormControl<TInput, TOutput>] => {
     const config = useGlobalObservable(formConfigKey);
 
+    const ref = useRef<(input: TInput) => Promise<TOutput> | TOutput>(submit);
+
+    ref.current = submit;
+
     const [{ form, configurator }] = useState(() => {
-        const form = new FormControl(submit, config);
+        const form = new FormControl(ref, config);
         const configurator = new Configurator(form);
 
         configure?.(configurator);
@@ -22,7 +26,6 @@ export const useForm = <TInput, TOutput>(
     });
 
     useEffect(() => {
-
         return () => configurator.reset();
     }, [configure]);
 

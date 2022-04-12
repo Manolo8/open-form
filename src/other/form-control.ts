@@ -11,6 +11,7 @@ import { LastChange } from '../types/last-change';
 import { AutoSubmitOptions } from '../types/auto-submit-options';
 import { nameof } from 'ts-simple-nameof';
 import { CleanupCallback } from 'open-observable/build/types/cleanup-callback';
+import { RefObject } from 'react';
 
 export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOutput> {
     private readonly _errorTranslator: ISubscriber<FormConfigType>;
@@ -18,14 +19,14 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     private readonly _loading: Observable<boolean>;
     private readonly _submitting: Observable<boolean>;
 
-    private _submit: (input: TInput) => Promise<TOutput> | TOutput;
+    private _submit: RefObject<(input: TInput) => Promise<TOutput> | TOutput>;
     private _success?: (output: TOutput, input: TInput) => void | SuccessResult<TInput>;
     private _error?: (input: TInput, formErrors?: KnownFormError) => void;
     private _additional?: (input: TInput) => TInput;
     private _autoSubmitCleanup?: () => void;
     private _resolvers: (() => Promise<boolean>)[];
 
-    constructor(submit: (input: TInput) => Promise<TOutput> | TOutput, errorTranslator: ISubscriber<FormConfigType>) {
+    constructor(submit: RefObject<(input: TInput) => Promise<TOutput> | TOutput>, errorTranslator: ISubscriber<FormConfigType>) {
         this._submit = submit;
         this._errorTranslator = errorTranslator;
         this._fields = new FieldList();
@@ -114,7 +115,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     public submit() {
         if (this._loading.current() || this._submitting.current()) return;
 
-        const submit = this._submit;
+        const submit = this._submit.current;
 
         if (!submit) return;
 
