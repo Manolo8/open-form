@@ -1,12 +1,12 @@
 import { InitialValue } from '../types/initial-value';
-import { FieldController } from './field-controller';
+import { FieldControl } from './field-control';
 import { Field } from './field';
 import { FieldError } from '../types/field-error';
 import { ISubscriber, Observable } from 'open-observable';
 import { LastChange } from '../types/last-change';
 
 export class FieldList {
-    private readonly _fields: Record<string, FieldController>;
+    private readonly _fields: Record<string, FieldControl>;
     private readonly _changes: Observable<number>;
     private readonly _lastChange: Observable<LastChange>;
 
@@ -101,11 +101,11 @@ export class FieldList {
         return this.getOrCreate(name, defaultValue) as Field;
     }
 
-    private getOrCreate(name: string, initial?: InitialValue): FieldController {
+    private getOrCreate(name: string, initial?: InitialValue): FieldControl {
         return this.getAndSetInitialValue(name, initial) ?? this.create(name, initial);
     }
 
-    private getAndSetInitialValue(name: string, initial: InitialValue): FieldController | undefined {
+    private getAndSetInitialValue(name: string, initial: InitialValue): FieldControl | undefined {
         const controller = this._fields[name];
 
         if (!controller) return undefined;
@@ -115,8 +115,8 @@ export class FieldList {
         return controller;
     }
 
-    private create(name: string, initial: InitialValue | undefined): FieldController {
-        const field = (this._fields[name] = new FieldController(initial));
+    private create(name: string, initial: InitialValue | undefined): FieldControl {
+        const field = (this._fields[name] = new FieldControl(initial));
 
         field.changed.subscribe((value, prev) =>
             this._changes.next((old) => (value && !prev ? old + 1 : !value && prev ? old - 1 : old))

@@ -10,8 +10,8 @@
     /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', 'es2020', or 'ESNext'. */
     "lib": [
       "ES6",
-      "es2017",
-      "DOM"
+      "es2015",
+      "dom"
     ],
     /* Specify library files to be included in the compilation. */
     // "allowJs": true,                       /* Allow javascript files to be compiled. */
@@ -25,8 +25,8 @@
     "sourceMap": true,
     /* Generates corresponding '.map' file. */
     // "outFile": "./",                       /* Concatenate and emit output to single file. */
-    //        "outDir": "C:/Users/willians/source/repos/Docspider/src/Docspider.Web.Mvc/node_modules/m-open-form/build",
-    //            "outDir": "C:/Users/willians/RiderProjects/Attendant/WebApp/ClientApp/node_modules/m-open-form/build",
+    //            "outDir": "C:/Users/willians/source/repos/Docspider/src/Docspider.Web.Mvc/node_modules/open-observable/build",
+
     "outDir": "./build",
     /* Redirect output structure to the directory. */
     "rootDirs": [
@@ -87,7 +87,9 @@
     /* Skip type checking of declaration files. */
     "forceConsistentCasingInFileNames": true,
     /* Disallow inconsistently-cased references to the same file. */
-    "types": []
+    "types": [
+      "jest"
+    ]
   },
   "exclude": [
     "build/**",

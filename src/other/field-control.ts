@@ -3,7 +3,7 @@ import { InitialValue } from '../types/initial-value';
 import { FieldError } from '../types/field-error';
 import { Dispatch } from 'open-observable';
 
-export class FieldController<T = any> extends Field<T> {
+export class FieldControl<T = any> extends Field<T> {
     private defaultValue?: T;
 
     constructor(initial: InitialValue<T>) {
@@ -13,6 +13,7 @@ export class FieldController<T = any> extends Field<T> {
     public next(value: Dispatch<T>) {
         super.next(value);
         this._changed.next(value !== (this.defaultValue === undefined ? this._initial : this.defaultValue));
+        this.nextError(null);
     }
 
     public nextDefault(value?: T) {
