@@ -3,5 +3,5 @@ import { ISubscriber } from 'open-observable';
 
 export type FormConfigType = {
     errorTranslate?: (error: any) => KnownFormError | null;
-    loadingComponent?: (loading: ISubscriber<boolean>) => JSX.Element;
+    loadingComponent?: (loading: ISubscriber<boolean>, submiting: ISubscriber<boolean>) => JSX.Element;
 };

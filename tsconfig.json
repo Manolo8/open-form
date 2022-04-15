@@ -10,7 +10,7 @@
     /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', 'es2020', or 'ESNext'. */
     "lib": [
       "ES6",
-      "es2015",
+      "es2017",
       "dom"
     ],
     /* Specify library files to be included in the compilation. */
