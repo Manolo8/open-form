@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { nameof } from 'ts-simple-nameof';
 import { IConfigurator, Configurator, useGlobalObservable } from 'open-observable';
 import { ModelExpSelector } from '../types/model-exp-selector';
@@ -20,14 +20,14 @@ export const useForm = <TInput, TOutput>(
         const form = new FormControl(ref, config);
         const configurator = new Configurator(form);
 
-        configure?.(configurator);
-
         return { form, configurator };
     });
 
     useEffect(() => {
-        return () => configurator.reset();
-    }, [configure]);
+        configure?.(configurator);
+    }, [configure, configurator]);
 
-    return useMemo(() => [nameof, form], []);
+    useEffect(() => () => configurator.reset(), [configure]);
+
+    return [nameof, form];
 };

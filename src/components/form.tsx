@@ -1,5 +1,5 @@
 import { listen, useGlobalObservable } from 'open-observable';
-import React, { forwardRef, HTMLAttributes, useEffect, useRef, useState } from 'react';
+import React, { FormEvent, forwardRef, HTMLAttributes, useEffect, useRef, useState } from 'react';
 import { formConfigKey } from '../other/form-config-key';
 import { FormControl } from '../other/form-control';
 import { FormContext } from '../state/form-context';
@@ -15,9 +15,19 @@ export const Form = forwardRef<HTMLFormElement, Props>(({ children, control, ...
 
     useEffect(() => control.cleanup, [control]);
 
+    const submit = (event: FormEvent) => {
+        control.submit();
+        event.preventDefault();
+    }
+
+    const reset = (event: FormEvent) => {
+        control.reset();
+        event.preventDefault();
+    }
+
     return (
         <FormContext.Provider value={control}>
-            <form ref={dualRef(ref, forwardedRef)} onSubmit={control.submit} onReset={control.reset} {...rest}>
+            <form ref={dualRef(ref, forwardedRef)} onSubmit={submit} onReset={reset} {...rest}>
                 {listen(
                     config,
                     (config) => config.loadingComponent && config.loadingComponent(control.loading, control.submitting)
