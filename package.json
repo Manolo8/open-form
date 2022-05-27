@@ -1,6 +1,6 @@
 {
     "name": "m-open-form",
-    "version": "1.0.21",
+    "version": "1.1.2",
     "description": "",
     "main": "./build/index.js",
     "types": "./build/index.d.ts",
@@ -14,14 +14,14 @@
     },
     "peerDependencies": {
         "open-observable": "^1.0.22",
-        "react": "^17.0.2"
+        "react": "^18.1.0"
     },
     "devDependencies": {
         "@babel/core": "^7.16.0",
         "@babel/preset-env": "^7.16.4",
         "@babel/preset-react": "^7.16.0",
         "@babel/preset-typescript": "^7.16.0",
-        "@testing-library/react": "^12.1.2",
+        "@testing-library/react": "^13.2.0",
         "@types/jest": "^27.0.3",
         "@types/react": "^17.0.0",
         "@typescript-eslint/eslint-plugin": "^5.5.0",
@@ -31,10 +31,10 @@
         "eslint-plugin-react": "^7.27.1",
         "eslint-plugin-react-hooks": "^4.3.0",
         "jest": "^27.4.3",
-        "react-dom": "^17.0.2",
-        "open-observable": "^1.0.22",
+        "open-observable": "^1.1.0",
         "prettier": "^2.5.0",
-        "react": "^17.0.2",
+        "react": "^18.1.0",
+        "react-dom": "^18.1.0",
         "typescript": "^3.9.10"
     },
     "author": "Manolo8",

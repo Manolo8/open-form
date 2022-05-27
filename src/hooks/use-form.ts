@@ -5,6 +5,7 @@ import { ModelExpSelector } from '../types/model-exp-selector';
 import { IFormConfigure } from '../types/i-form-configure';
 import { FormControl } from '../other/form-control';
 import { formConfigKey } from '../other/form-config-key';
+import { enhacedNameof } from '../other/enhaced-nameof';
 
 export const useForm = <TInput, TOutput>(
     submit: (input: TInput) => Promise<TOutput> | TOutput,
@@ -29,5 +30,5 @@ export const useForm = <TInput, TOutput>(
 
     useEffect(() => () => configurator.reset(), [configure]);
 
-    return [nameof, form];
+    return [enhacedNameof, form];
 };
