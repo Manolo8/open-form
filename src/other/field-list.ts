@@ -36,21 +36,12 @@ export class FieldList {
     private extractAndClear(object: any) {
         const oldNames = new Set(Object.keys(this._fields));
 
-        this.deepExtract(oldNames, object, '');
+        for (const key in object) {
+            this.getOrCreate(key).nextDefault(object[key]);
+            oldNames.delete(key);
+        }
 
         oldNames.forEach((x) => this.getOrCreate(x).clear());
-    }
-
-    private deepExtract(oldNames: Set<string>, object: any, path: string) {
-        for (const key in object) {
-            const currentPath = path ? path + '.' + key : key;
-            if (typeof object[key] === 'object' && !Array.isArray(object[key])) {
-                this.deepExtract(oldNames, object[key], currentPath);
-            } else {
-                this.getOrCreate(currentPath).nextDefault(object[key]);
-                oldNames.delete(currentPath);
-            }
-        }
     }
 
     private clear() {
@@ -73,28 +64,14 @@ export class FieldList {
 
             if (value === null) continue;
 
-            const spl = key.split('.');
-
-            let path = building;
-
-            if (spl.length > 1) {
-                for (let i = 0; i < spl.length - 1; i++) {
-                    if (!path[spl[i]]) path[spl[i]] = {};
-
-                    path = path[spl[i]];
-                }
-            }
-
-            path[spl[spl.length - 1]] = value;
+            building[key] = value;
         }
 
         return building;
     }
 
     public error(errors: Record<string, FieldError>): void {
-        Object.entries(errors).forEach(([key, value]) => {
-            this.getOrCreate(key, undefined).nextError(value);
-        });
+        for (let entry of Object.entries(errors)) this.getOrCreate(entry[0], undefined).nextError(entry[1]);
     }
 
     public field(name: string, defaultValue: InitialValue): Field {
