@@ -19,7 +19,7 @@ type Props = {
 export const Value: VFC<Props> = ({ name, render, defaultValue }) => {
     const field = useField(name, defaultValue);
 
-    const value = useSubscriber(field.value);
+    const value = useSubscriber(field);
     const error = useSubscriber(field.error);
 
     return render(value, field.next, error) ?? (null as any);

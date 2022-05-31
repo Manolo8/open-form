@@ -13,7 +13,7 @@ type Props = {
 export const ValueChange: VFC<Props> = ({ name, onChange, defaultValue }) => {
     const field = useField(name, defaultValue);
 
-    const value = useSubscriber(field.value);
+    const value = useSubscriber(field);
 
     useEffect(() => onChange(value), [value]);
 

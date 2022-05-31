@@ -60,7 +60,7 @@ export class FieldList {
         const entries = Object.entries(this._fields);
 
         for (const [key, field] of entries) {
-            const value = field.value.current();
+            const value = field.current();
 
             if (value === null) continue;
 
@@ -87,7 +87,7 @@ export class FieldList {
 
         if (!controller) return undefined;
 
-        if (initial && controller.value.current() === undefined) controller.next(initial);
+        if (initial && controller.current() === undefined) controller.next(initial);
 
         return controller;
     }
@@ -99,7 +99,7 @@ export class FieldList {
             this._changes.next((old) => (value && !prev ? old + 1 : !value && prev ? old - 1 : old))
         );
 
-        field.value.subscribe((value, oldValue) => {
+        field.subscribe((value, oldValue) => {
             this._lastChange.next({ name, value, oldValue });
         });
 

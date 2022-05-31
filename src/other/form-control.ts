@@ -1,17 +1,17 @@
-import {FieldList} from './field-list';
-import {InitialValue} from '../types/initial-value';
-import {FormError} from '../types/form-error';
-import {ISubscriber, Observable} from 'open-observable';
-import {FormConfigType} from '../types/form-config-type';
-import {setFormSubmitInput} from './form-submit-input';
-import {IFormConfigure} from '../types/i-form-configure';
-import {SuccessResult} from '../types/success-result';
-import {KnownFormError} from '../types/known-form-error';
-import {LastChange} from '../types/last-change';
-import {AutoSubmitOptions} from '../types/auto-submit-options';
-import {CleanupCallback} from 'open-observable/build/types/cleanup-callback';
-import {RefObject} from 'react';
-import {enhacedNameof} from './enhaced-nameof';
+import { FieldList } from './field-list';
+import { InitialValue } from '../types/initial-value';
+import { FormError } from '../types/form-error';
+import { ISubscriber, Observable } from 'open-observable';
+import { FormConfigType } from '../types/form-config-type';
+import { setFormSubmitInput } from './form-submit-input';
+import { IFormConfigure } from '../types/i-form-configure';
+import { SuccessResult } from '../types/success-result';
+import { KnownFormError } from '../types/known-form-error';
+import { LastChange } from '../types/last-change';
+import { AutoSubmitOptions } from '../types/auto-submit-options';
+import { CleanupCallback } from 'open-observable/build/types/cleanup-callback';
+import { RefObject } from 'react';
+import { enhacedNameof } from './enhaced-nameof';
 
 export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOutput> {
     private readonly _errorTranslator: ISubscriber<FormConfigType>;
@@ -72,7 +72,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         if (options !== false) {
             let intervalId = 0;
 
-            const cleanup = this._fields.lastChange.subscribe(({name, value, oldValue}) => {
+            const cleanup = this._fields.lastChange.subscribe(({ name, value, oldValue }) => {
                 const result = options.check?.(enhacedNameof, name, value, oldValue) ?? true;
 
                 if (result) {
@@ -118,8 +118,8 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         return () => this._successResolvers.splice(this._successResolvers.indexOf(resolver), 1);
     }
 
-    public field(name: string, initial?: InitialValue) {
-        return this._fields.field(name, initial);
+    public field(name: keyof TInput, initial?: InitialValue) {
+        return this._fields.field(name as string, initial);
     }
 
     public async submit() {
@@ -135,7 +135,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
 
         if (!success) {
             this._submitting.next(false);
-            return
+            return;
         }
 
         let input = this._fields.toObject() as TInput;
@@ -145,10 +145,8 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         setFormSubmitInput(input);
 
         try {
-
             const output = await submit(input);
             this.handleSuccess(output, input);
-
         } catch (exception) {
             this.handleError(exception, input);
         } finally {
