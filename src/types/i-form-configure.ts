@@ -11,5 +11,7 @@ export interface IFormConfigure<TInput, TOutput> {
 
     setAutoSubmit(value: AutoSubmitOptions<TInput>): void;
 
-    load(value: Partial<TInput> | Promise<Partial<TInput>>): void;
+    load(
+        value: Partial<TInput> | Promise<Partial<TInput>> | (() => Partial<TInput> | Promise<Partial<TInput>>)
+    ): void;
 }

@@ -4,7 +4,7 @@ it('should check the is changed property of field-controller', function () {
 
     const field = new FieldControl(1);
 
-    expect(field.value.current()).toBe(1);
+    expect(field.current()).toBe(1);
     expect(field.changed.current()).toBeFalsy();
 
     field.next(2);

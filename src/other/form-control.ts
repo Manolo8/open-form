@@ -12,12 +12,14 @@ import { AutoSubmitOptions } from '../types/auto-submit-options';
 import { CleanupCallback } from 'open-observable/build/types/cleanup-callback';
 import { RefObject } from 'react';
 import { enhacedNameof } from './enhaced-nameof';
+import { Field } from './field';
 
 export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOutput> {
     private readonly _errorTranslator: ISubscriber<FormConfigType>;
     private readonly _fields: FieldList;
     private readonly _loading: Observable<boolean>;
     private readonly _submitting: Observable<boolean>;
+    private readonly _locks: Observable<number>;
 
     private _submit: RefObject<(input: TInput) => Promise<TOutput> | TOutput>;
     private _success?: (output: TOutput, input: TInput) => void | SuccessResult<TInput>;
@@ -36,6 +38,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         this._fields = new FieldList();
         this._loading = new Observable<boolean>(false);
         this._submitting = new Observable<boolean>(false);
+        this._locks = new Observable(0);
         this._resolvers = [];
         this._successResolvers = [];
 
@@ -51,6 +54,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         this.handleSuccess = this.handleSuccess.bind(this);
         this.handleError = this.handleError.bind(this);
         this.addResolver = this.addResolver.bind(this);
+        this.lock = this.lock.bind(this);
     }
 
     public setSuccess(callback: (output: TOutput, input: TInput) => void | SuccessResult<TInput>): void {
@@ -88,22 +92,28 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         }
     }
 
-    public load(value: Partial<TInput> | Promise<Partial<TInput>>) {
-        this._loading.next(true);
+    public async load(
+        value: Partial<TInput> | Promise<Partial<TInput>> | (() => Partial<TInput> | Promise<Partial<TInput>>)
+    ) {
+        try {
+            this._loading.next(true);
 
-        const resolver = Promise.resolve(value).then((data) => {
-            if (!data) return this._loading.next(false);
+            if (typeof value === 'function') value = value();
 
-            return this._fields.fromObject(data);
-        });
+            const data = await value;
 
-        resolver.then(() => {
-            setTimeout(() => this._loading.next(false), 100);
-        });
+            this._fields.fromObject(data);
+        } finally {
+            this._loading.next(false);
+        }
     }
 
-    public cleanup() {
+    public cleanup(): void {
         this._autoSubmitCleanup?.();
+    }
+
+    public lock(value: boolean): void {
+        this._locks.next((old) => old + (value ? 1 : -1));
     }
 
     public addResolver(resolver: () => Promise<boolean>): CleanupCallback {
@@ -118,11 +128,13 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         return () => this._successResolvers.splice(this._successResolvers.indexOf(resolver), 1);
     }
 
-    public field(name: keyof TInput, initial?: InitialValue) {
+    public field<TType extends keyof TInput>(name: TType, initial?: InitialValue): Field<TInput[TType]> {
         return this._fields.field(name as string, initial);
     }
 
-    public async submit() {
+    public async submit(): Promise<void> {
+        if (this._locks.current() !== 0) return;
+
         if (this._loading.current() || this._submitting.current()) return;
 
         const submit = this._submit.current;
@@ -131,21 +143,29 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
 
         this._submitting.next(true);
 
-        const success = await this.resolve();
+        try {
+            const success = await this.resolve();
 
-        if (!success) {
+            if (!success) {
+                this._submitting.next(false);
+                return;
+            }
+        } catch (exception) {
             this._submitting.next(false);
-            return;
+            throw exception;
         }
 
-        let input = this._fields.toObject() as TInput;
-
-        if (this._additional) input = this._additional(input);
-
-        setFormSubmitInput(input);
+        let input: TInput = null as unknown as TInput;
 
         try {
+            input = this._fields.toObject() as TInput;
+
+            if (this._additional) input = this._additional(input);
+
+            setFormSubmitInput(input);
+
             const output = await submit(input);
+
             this.handleSuccess(output, input);
         } catch (exception) {
             this.handleError(exception, input);
@@ -160,6 +180,10 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
 
     public reset() {
         this._fields.reset();
+    }
+
+    public get locks(): ISubscriber<number> {
+        return this._locks.asSubscriber();
     }
 
     public get loading(): ISubscriber<boolean> {
