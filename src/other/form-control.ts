@@ -1,3 +1,4 @@
+import { LoadError } from '../types/load-error';
 import { FieldList } from './field-list';
 import { InitialValue } from '../types/initial-value';
 import { FormError } from '../types/form-error';
@@ -218,6 +219,16 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
                 this._fields.fromObject(result.value);
                 break;
         }
+    }
+
+    public loadError(errors: LoadError): void {
+        const translator = this._errorTranslator.current();
+
+        const error = (
+            errors.translate ? translator?.errorTranslate?.(errors.errors) : errors.errors
+        ) as KnownFormError;
+
+        if (error) this._fields.error(error);
     }
 
     private handleError(error: FormError, input: TInput) {

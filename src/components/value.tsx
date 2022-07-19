@@ -1,8 +1,9 @@
-import React, { ReactElement, VFC } from 'react';
+import React, { Fragment, ReactElement, VFC } from 'react';
 import { useField } from '../hooks/use-field';
 import { Dispatch, useSubscriber } from 'open-observable';
 import { ModelExpSelector } from '../types/model-exp-selector';
 import { InitialValue } from '../types/initial-value';
+import { useForm } from '../hooks/use-form';
 
 type Render<T> = (
     value: T,
@@ -25,14 +26,14 @@ export const Value: VFC<Props> = ({ name, render, defaultValue }) => {
     return render(value, field.next, error) ?? (null as any);
 };
 
-export const value = <T, P>(
+export const value = <T, P extends keyof T>(
     model: ModelExpSelector<T>,
-    selector: ((value: T) => P) | [(value: T) => P, P],
-    render: Render<P>
+    selector: P | [P, T[P]],
+    render: Render<T[P]>
 ) => {
-    if (typeof selector === 'function') {
-        return <Value name={model(selector)} render={render} />;
+    if (!Array.isArray(selector)) {
+        return <Value name={selector as string} render={render} />;
     } else {
-        return <Value name={model(selector[0])} render={render} defaultValue={selector[1]} />;
+        return <Value name={selector[0] as string} render={render} defaultValue={selector[1]} />;
     }
 };
