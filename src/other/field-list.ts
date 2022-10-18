@@ -37,7 +37,7 @@ export class FieldList {
         const oldNames = new Set(Object.keys(this._fields));
 
         for (const key in object) {
-            this.getOrCreate(key).nextDefault(object[key]);
+            this.getOrCreate(key, object[key]).nextDefault(object[key]);
             oldNames.delete(key);
         }
 
