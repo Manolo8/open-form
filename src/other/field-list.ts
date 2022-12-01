@@ -28,6 +28,10 @@ export class FieldList {
         return this._lastChange.asSubscriber();
     }
 
+    public get fields(): string[] {
+        return Object.keys(this._fields);
+    }
+
     public fromObject(object: any): void {
         if (object) this.extractAndClear(object);
         else this.clear();
@@ -60,6 +64,9 @@ export class FieldList {
         const entries = Object.entries(this._fields);
 
         for (const [key, field] of entries) {
+            //Fields started with temp are ignored
+            if (key.startsWith('temp')) continue;
+
             const value = field.current();
 
             if (value === null) continue;

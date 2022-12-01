@@ -129,6 +129,8 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         return () => this._successResolvers.splice(this._successResolvers.indexOf(resolver), 1);
     }
 
+
+
     public field<TType extends keyof TInput>(name: TType, initial?: InitialValue): Field<TInput[TType]> {
         return this._fields.field(name as string, initial);
     }
@@ -156,23 +158,23 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
             throw exception;
         }
 
-        let input: TInput = null as unknown as TInput;
+        let input = this._fields.toObject() as TInput;
+        let output: TOutput;
+
+        if (this._additional) input = this._additional(input);
+
+        setFormSubmitInput(input);
 
         try {
-            input = this._fields.toObject() as TInput;
-
-            if (this._additional) input = this._additional(input);
-
-            setFormSubmitInput(input);
-
-            const output = await submit(input);
-
-            this.handleSuccess(output, input);
+            output = await submit(input);
         } catch (exception) {
             this.handleError(exception, input);
+            return;
         } finally {
             this._submitting.next(false);
         }
+
+        this.handleSuccess(output, input);
     }
 
     public get submitting(): ISubscriber<boolean> {
@@ -181,6 +183,10 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
 
     public reset() {
         this._fields.reset();
+    }
+
+    public get fields(): string[] {
+        return this._fields.fields;
     }
 
     public get locks(): ISubscriber<number> {

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { nameof } from 'ts-simple-nameof';
 import { IConfigurator, Configurator, useGlobalObservable } from 'open-observable';
 import { ModelExpSelector } from '../types/model-exp-selector';
 import { IFormConfigure } from '../types/i-form-configure';
