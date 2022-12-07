@@ -32,6 +32,12 @@ export class FieldList {
         return Object.keys(this._fields);
     }
 
+    public get fieldsHandlingErrors(): string[] {
+        return Object.entries(this._fields)
+            .filter(([_, value]) => value.hasErrorHandler())
+            .map(([key, _]) => key);
+    }
+
     public fromObject(object: any): void {
         if (object) this.extractAndClear(object);
         else this.clear();
