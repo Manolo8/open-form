@@ -37,4 +37,8 @@ export class Field<T = any> implements ISubscriber<T> {
     subscribe(callback: Callback<T>, ignoreFirst?: boolean): CleanupCallback {
         return this._value.subscribe(callback, ignoreFirst);
     }
+
+    hasErrorHandler(): boolean { 
+        return this._error.watchingCount() > 0;
+    }    
 }

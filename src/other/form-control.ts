@@ -7,6 +7,7 @@ import { FormConfigType } from '../types/form-config-type';
 import { setFormSubmitInput } from './form-submit-input';
 import { IFormConfigure } from '../types/i-form-configure';
 import { SuccessResult } from '../types/success-result';
+import { FormSubmitHandle } from '../types/form-submit-handle';
 import { KnownFormError } from '../types/known-form-error';
 import { LastChange } from '../types/last-change';
 import { AutoSubmitOptions } from '../types/auto-submit-options';
@@ -16,13 +17,13 @@ import { enhacedNameof } from './enhaced-nameof';
 import { Field } from './field';
 
 export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOutput> {
-    private readonly _errorTranslator: ISubscriber<FormConfigType>;
+    private readonly _errorTranslator?: ISubscriber<FormConfigType>;
     private readonly _fields: FieldList;
     private readonly _loading: Observable<boolean>;
     private readonly _submitting: Observable<boolean>;
     private readonly _locks: Observable<number>;
 
-    private _submit: RefObject<(input: TInput) => Promise<TOutput> | TOutput>;
+    private _submit: RefObject<FormSubmitHandle<TInput, TOutput>>;
     private _success?: (output: TOutput, input: TInput) => void | SuccessResult<TInput>;
     private _error?: (input: TInput, formErrors?: KnownFormError<TInput>) => KnownFormError<TInput> | void;
     private _additional?: (input: TInput) => TInput;
@@ -31,8 +32,8 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     private _successResolvers: ((input: TInput, output: TOutput) => void)[];
 
     constructor(
-        submit: RefObject<(input: TInput) => Promise<TOutput> | TOutput>,
-        errorTranslator: ISubscriber<FormConfigType>
+        submit: RefObject<FormSubmitHandle<TInput, TOutput>>,
+        errorTranslator?: ISubscriber<FormConfigType>
     ) {
         this._submit = submit;
         this._errorTranslator = errorTranslator;
@@ -129,8 +130,6 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         return () => this._successResolvers.splice(this._successResolvers.indexOf(resolver), 1);
     }
 
-
-
     public field<TType extends keyof TInput>(name: TType, initial?: InitialValue): Field<TInput[TType]> {
         return this._fields.field(name as string, initial);
     }
@@ -189,6 +188,10 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         return this._fields.fields;
     }
 
+    public get fieldsHandlingErrors(): string[] {
+        return this._fields.fieldsHandlingErrors;
+    }
+
     public get locks(): ISubscriber<number> {
         return this._locks.asSubscriber();
     }
@@ -228,7 +231,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     }
 
     public loadError(errors: LoadError): void {
-        const translator = this._errorTranslator.current();
+        const translator = this._errorTranslator?.current();
 
         const error = (
             errors.translate ? translator?.errorTranslate?.(errors.errors) : errors.errors
@@ -238,8 +241,8 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     }
 
     private handleError(error: FormError, input: TInput) {
-        const translator = this._errorTranslator.current();
-        const translated = translator.errorTranslate?.(error) ?? undefined;
+        const translator = this._errorTranslator?.current();
+        const translated = translator?.errorTranslate?.(error) ?? undefined;
 
         if (translated) this._fields.error(translated);
 
