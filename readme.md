@@ -28,7 +28,7 @@ Or with yarn
 
 In the index.js file, wrap your components with GlobalObservable to recognize the observables
 
-``` javascript
+```tsx
 root.render(
     <React.StrictMode>
         <GlobalObservable>
@@ -68,12 +68,9 @@ const Contact = () => {
 };
 
 export default Contact;
-
 ```
 
 ### Field / TextBlock
-
-
 
 ```tsx
 import { useField } from 'm-open-form';
@@ -95,9 +92,9 @@ export const TextBlock = ({ label, name, ...rest }: Props) => {
             <input onChange={(x) => field$.next(x.target.value)} value={fieldValue} name={name} {...rest}></input>
         </label>
     );
-};
-
-```### Hooks
+}
+```
+### Hooks
 
 * useForm
 * useField
@@ -106,3 +103,38 @@ export const TextBlock = ({ label, name, ...rest }: Props) => {
 * useFormSuccessResolver
 * useFormLock
 * useIsFormLocked
+
+## API Reference
+
+#### Hooks
+
+<details>
+  <summary>useForm</summary>
+  Initialize the form. 
+  Params: submit typed function
+  Returns: [model, form] 
+  'Model' is a finder by name of prop from submit typed function. 'Form' is a FormControl instance, that yout should pass to <Form> component  
+</details>
+
+| Name |  Description |
+| :------- |  :------- |
+| `useForm` | Initialize the form. Returns two objects. [model, form] Model is a finder by name of prop. Form is a FormControl instance, that yout should pass to <Form> component |
+| `useFormControl` | Get the current FormControl instance |
+| `useField` | Get the field instance. Use to control and manipulate your inputs  |
+| `useFormResolver` | Add a callback to intercept before submit. Pass a Promise<boolean> to indicate whether to continue submit or stop it  |
+| `useFormSuccessResolver` |  After success submit. Receive a callback with input and output form submit action | 
+| `useFormLock` | Lock or unlock the form. When locked, the submit does not occur. |
+| `useIsFormLocked` | Check if form is locked |
+
+#### useForm(handleSubmit, configurator)
+
+HandleSubmit accepts a function callback or promisse.
+
+## Objects
+
+- FormControl
+Controls the form. It's possible invoke submit, lock, add resolvers, check if there are changes, etc
+- Field
+Controls the form field. It is possible to change or get the value, once it is an observable.
+
+
