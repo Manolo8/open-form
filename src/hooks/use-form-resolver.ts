@@ -4,5 +4,5 @@ import { useEffect } from 'react';
 export const useFormResolver = (resolver: () => Promise<boolean>) => {
     const control = useFormControl();
 
-    useEffect(() => control.addResolver(resolver), []);
+    useEffect(() => control.addResolver(resolver), [resolver]);
 };
