@@ -1,23 +1,25 @@
-import { InitialValue } from '../types/initial-value';
-import { FieldControl } from './field-control';
-import { Field } from './field';
-import { FieldError } from '../types/field-error';
-import { ISubscriber, Observable } from 'open-observable';
-import { LastChange } from '../types/last-change';
+import {InitialValue} from '../types/initial-value';
+import {FieldControl} from './field-control';
+import {Field} from './field';
+import {FieldError} from '../types/field-error';
+import {ISubscriber, Observable} from 'open-observable';
+import {LastChange} from '../types/last-change';
 
 export class FieldList {
-    private readonly _fields: Record<string, FieldControl>;
+    private readonly _fields: Map<string, FieldControl>;
     private readonly _changes: Observable<number>;
     private readonly _lastChange: Observable<LastChange>;
+    private readonly _readonly: ISubscriber<boolean>;
 
-    constructor() {
-        this._fields = {};
+    constructor(readonly: ISubscriber<boolean>) {
+        this._readonly = readonly;
+        this._fields = new Map();
         this._changes = new Observable<number>(0);
-        this._lastChange = new Observable({ name: '', value: '', oldValue: '' });
+        this._lastChange = new Observable({name: '', value: '', oldValue: ''});
     }
 
     public reset() {
-        Object.values(this._fields).forEach((x) => x.reset());
+        this._fields.forEach((field) => field.reset());
     }
 
     public get changes(): ISubscriber<number> {
@@ -29,7 +31,7 @@ export class FieldList {
     }
 
     public get fields(): string[] {
-        return Object.keys(this._fields);
+        return Array.from(this._fields.keys());
     }
 
     public get fieldsHandlingErrors(): string[] {
@@ -44,7 +46,7 @@ export class FieldList {
     }
 
     private extractAndClear(object: any) {
-        const oldNames = new Set(Object.keys(this._fields));
+        const oldNames = new Set(this._fields.keys());
 
         for (const key in object) {
             this.getOrCreate(key, object[key]).nextDefault(object[key]);
@@ -67,18 +69,14 @@ export class FieldList {
 
     public toObject(): any {
         const building = {} as any;
-        const entries = Object.entries(this._fields);
 
-        for (const [key, field] of entries) {
-            //Fields started with temp are ignored
-            if (key.startsWith('temp')) continue;
-
+        this._fields.forEach((field, key) => {
             const value = field.current();
 
-            if (value === null) continue;
+            if (value === null) return;
 
             building[key] = value;
-        }
+        });
 
         return building;
     }
@@ -96,7 +94,7 @@ export class FieldList {
     }
 
     private getAndSetInitialValue(name: string, initial: InitialValue): FieldControl | undefined {
-        const controller = this._fields[name];
+        const controller = this._fields.get(name);
 
         if (!controller) return undefined;
 
@@ -106,14 +104,16 @@ export class FieldList {
     }
 
     private create(name: string, initial: InitialValue | undefined): FieldControl {
-        const field = (this._fields[name] = new FieldControl(initial));
+        const field = new FieldControl(initial, this._readonly);
+
+        this._fields.set(name, field);
 
         field.changed.subscribe((value, prev) =>
             this._changes.next((old) => (value && !prev ? old + 1 : !value && prev ? old - 1 : old))
         );
 
         field.subscribe((value, oldValue) => {
-            this._lastChange.next({ name, value, oldValue });
+            this._lastChange.next({name, value, oldValue});
         });
 
         return field;

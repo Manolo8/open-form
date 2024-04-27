@@ -1,9 +1,9 @@
-import {listen, useGlobalObservable} from 'open-observable';
-import React, {FormEvent, forwardRef, HTMLAttributes, useEffect, useRef} from 'react';
-import {formConfigKey} from '../other/form-config-key';
-import {FormControl} from '../other/form-control';
-import {FormContext} from '../state/form-context';
-import {dualRef} from '../util/dual-ref';
+import { Listen, useGlobalObservable } from 'open-observable';
+import React, { FormEvent, forwardRef, HTMLAttributes, useEffect, useRef } from 'react';
+import { formConfigKey } from '../other/form-config-key';
+import { FormControl } from '../other/form-control';
+import { FormContext } from '../state/form-context';
+import { dualRef } from '../util/dual-ref';
 
 type Props = Omit<HTMLAttributes<HTMLFormElement>, 'onSubmit' | 'onReset'> & {
     control: FormControl<any, any>;
@@ -11,7 +11,7 @@ type Props = Omit<HTMLAttributes<HTMLFormElement>, 'onSubmit' | 'onReset'> & {
 };
 
 export const Form = forwardRef<HTMLFormElement, Props>(
-    ({children, control, disableLoading, ...rest}, forwardedRef) => {
+    ({ children, control, disableLoading, ...rest }, forwardedRef) => {
         const ref = useRef<HTMLFormElement>(null);
         const config = useGlobalObservable(formConfigKey);
 
@@ -30,12 +30,13 @@ export const Form = forwardRef<HTMLFormElement, Props>(
         return (
             <FormContext.Provider value={control}>
                 <form ref={dualRef(ref, forwardedRef)} onSubmit={submit} onReset={reset} {...rest}>
-                    {!disableLoading &&
-                        listen(
-                            config,
-                            (config) =>
+                    {!disableLoading && (
+                        <Listen subscriber={config}>
+                            {(config) =>
                                 config.loadingComponent && config.loadingComponent(control.loading, control.submitting)
-                        )}
+                            }
+                        </Listen>
+                    )}
                     {children}
                 </form>
             </FormContext.Provider>

@@ -1,5 +1,5 @@
-import { listen, useGlobalObservable } from 'open-observable';
-import React, { FormEvent, forwardRef, HTMLAttributes, useEffect, useRef } from 'react';
+import { Listen, useGlobalObservable } from 'open-observable';
+import React, { forwardRef, HTMLAttributes, useEffect, useRef } from 'react';
 import { formConfigKey } from '../other/form-config-key';
 import { FormControl } from '../other/form-control';
 import { FormContext } from '../state/form-context';
@@ -64,12 +64,13 @@ export const FormFilter = forwardRef<HTMLDivElement, Props>(
         return (
             <FormContext.Provider value={control}>
                 <div data-form ref={dualRef(ref, forwardedRef)} {...rest}>
-                    {!disableLoading &&
-                        listen(
-                            config,
-                            (config) =>
+                    {!disableLoading && (
+                        <Listen subscriber={config}>
+                            {(config) =>
                                 config.loadingComponent && config.loadingComponent(control.loading, control.submitting)
-                        )}
+                            }
+                        </Listen>
+                    )}
                     {children}
                 </div>
             </FormContext.Provider>

@@ -1,13 +1,12 @@
-import { Field } from './field';
+import {Dispatch, ISubscriber} from 'open-observable';
 import { InitialValue } from '../types/initial-value';
-import { FieldError } from '../types/field-error';
-import { Dispatch } from 'open-observable';
+import { Field } from './field';
 
 export class FieldControl<T = any> extends Field<T> {
     private defaultValue?: T;
 
-    constructor(initial: InitialValue<T>) {
-        super(initial);
+    constructor(initial: InitialValue<T>, readonly: ISubscriber<boolean>) {
+        super(initial, readonly);
     }
 
     public next(value: Dispatch<T>) {
@@ -20,10 +19,6 @@ export class FieldControl<T = any> extends Field<T> {
         this.defaultValue = value;
         this.next(value ?? this._initial);
         this.nextError(null);
-    }
-
-    public nextError(error: FieldError) {
-        this._error.next(error);
     }
 
     public clear() {

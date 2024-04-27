@@ -26,8 +26,8 @@ export const valueChange = <T extends {}, P extends {}>(
     onChange: (value: P) => void
 ) => {
     if (typeof selector === 'function') {
-        return <ValueChange name={model(selector)} onChange={onChange} />;
+        return <ValueChange name={model(selector as any)} onChange={onChange} />;
     } else {
-        return <ValueChange name={model(selector[0])} onChange={onChange} defaultValue={selector[1]} />;
+        return <ValueChange name={model(selector[0] as any)} onChange={onChange} defaultValue={selector[1]} />;
     }
 };

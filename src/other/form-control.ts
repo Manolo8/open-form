@@ -22,6 +22,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     private readonly _loading: Observable<boolean>;
     private readonly _submitting: Observable<boolean>;
     private readonly _locks: Observable<number>;
+    private readonly _readonly: Observable<boolean>;
 
     private _submit: RefObject<FormSubmitHandle<TInput, TOutput>>;
     private _success?: (output: TOutput, input: TInput) => void | SuccessResult<TInput>;
@@ -37,10 +38,11 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     ) {
         this._submit = submit;
         this._errorTranslator = errorTranslator;
-        this._fields = new FieldList();
         this._loading = new Observable<boolean>(false);
         this._submitting = new Observable<boolean>(false);
         this._locks = new Observable(0);
+        this._readonly = new Observable<boolean>(false);
+        this._fields = new FieldList(this._readonly);
         this._resolvers = [];
         this._successResolvers = [];
 
@@ -58,7 +60,6 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         this.addResolver = this.addResolver.bind(this);
         this.lock = this.lock.bind(this);
     }
-
     public setSuccess(callback: (output: TOutput, input: TInput) => void | SuccessResult<TInput>): void {
         this._success = callback;
     }
@@ -118,6 +119,10 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         this._locks.next((old) => old + (value ? 1 : -1));
     }
 
+    public setReadonly(readonly: boolean): void {
+        this._readonly.next(readonly);
+    }
+
     public addResolver(resolver: () => Promise<boolean>): CleanupCallback {
         this._resolvers.push(resolver);
 
@@ -166,7 +171,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
 
         try {
             output = await submit(input);
-        } catch (exception) {
+        } catch (exception: any) {
             this.handleError(exception, input);
             return;
         } finally {
@@ -194,6 +199,10 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
 
     public get locks(): ISubscriber<number> {
         return this._locks.asSubscriber();
+    }
+
+    public get readonly(): ISubscriber<boolean> {
+        return this._readonly.asSubscriber();
     }
 
     public get loading(): ISubscriber<boolean> {
