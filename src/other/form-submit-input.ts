@@ -1,11 +1,11 @@
-const key = '__FORM_SUBMIT_CHECK';
+const submitInputs = new WeakSet<object>();
 
 export const isFormSubmitInput = (input: any) => {
-    return input && input[key];
+    return typeof input === 'object' && input !== null && submitInputs.has(input);
 };
 
 export const setFormSubmitInput = (input: any) => {
-    if (input === undefined || input === null) return;
+    if (typeof input !== 'object' || input === null) return;
 
-    input[key] = true;
+    submitInputs.add(input);
 };

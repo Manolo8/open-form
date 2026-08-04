@@ -43,10 +43,10 @@ export const FormFilter = forwardRef<HTMLDivElement, Props>(
 
                 if (!(button.type === 'submit' || button.type === 'reset')) return;
 
+                if (button.getAttribute('disabled') !== null) return;
+
                 event.stopPropagation();
                 event.preventDefault();
-
-                if (button.getAttribute('disabled') !== null) return;
 
                 if (button.type === 'submit') control.submit();
                 else if (button.type === 'reset') control.reset();

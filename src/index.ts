@@ -13,6 +13,7 @@ export { FormFilter } from './components/form-filter';
 export { value, Value } from './components/value';
 export { valueChange, ValueChange } from './components/value-change';
 export { FormConfig } from './components/form-config';
+export { Path } from './components/path';
 
 export { Field } from './other/field';
 

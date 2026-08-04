@@ -15,7 +15,9 @@ export const ValueChange: VFC<Props> = ({ name, onChange, defaultValue }) => {
 
     const value = useSubscriber(field);
 
-    useEffect(() => onChange(value), [value]);
+    useEffect(() => {
+        onChange(value);
+    }, [value]);
 
     return null;
 };

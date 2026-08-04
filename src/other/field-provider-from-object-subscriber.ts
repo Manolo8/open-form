@@ -3,6 +3,7 @@ import IFieldProvider from '../types/i-field-provider';
 import { InitialValue } from '../types/initial-value';
 import { Field } from './field';
 import { FieldControl } from './field-control';
+import { FieldError } from '../types/field-error';
 
 export default class FieldProviderFromObjectSubscriber<T> implements IFieldProvider<T> {
     private readonly _fields: Map<string, FieldControl<any>> = new Map();
@@ -11,7 +12,7 @@ export default class FieldProviderFromObjectSubscriber<T> implements IFieldProvi
     private _current?: T;
 
     constructor(
-        _subscriber: ISubscriber<T>,
+        _parentField: Field<T>,
         private readonly _readonly: ISubscriber<boolean>,
         private readonly _next: (value: T) => void
     ) {
@@ -19,10 +20,11 @@ export default class FieldProviderFromObjectSubscriber<T> implements IFieldProvi
         this.createField = this.createField.bind(this);
         this.onFieldChange = this.onFieldChange.bind(this);
         this.onParentFieldChange = this.onParentFieldChange.bind(this);
+        this.onParentFieldChildError = this.onParentFieldChildError.bind(this);
         this.destroy = this.destroy.bind(this);
 
-        this._current = _subscriber.current();
-        this._destroyCallbacks.push(_subscriber.subscribe(this.onParentFieldChange));
+        this._destroyCallbacks.push(_parentField.subscribe(this.onParentFieldChange));
+        this._destroyCallbacks.push(_parentField.childError.subscribe(this.onParentFieldChildError));
     }
 
     field<TType extends keyof T>(name: TType, initial?: InitialValue): Field<T[TType]> {
@@ -42,9 +44,10 @@ export default class FieldProviderFromObjectSubscriber<T> implements IFieldProvi
     onParentFieldChange(newValue: T) {
         if (newValue === this._current) return;
 
-        if (typeof newValue !== 'object') {
+        this._current = newValue;
+
+        if (newValue == null || typeof newValue !== 'object') {
             this._fields.forEach((field) => field.reset());
-            this._current = newValue;
 
             return;
         }
@@ -71,7 +74,7 @@ export default class FieldProviderFromObjectSubscriber<T> implements IFieldProvi
 
         let newValue: any = current;
 
-        if (typeof newValue !== 'object') {
+        if (newValue == null || typeof newValue !== 'object') {
             newValue = { [name]: value } as T;
         } else if (newValue[name] !== value) {
             newValue = { ...newValue, [name]: value };
@@ -81,6 +84,38 @@ export default class FieldProviderFromObjectSubscriber<T> implements IFieldProvi
             this._current = newValue;
             this._next(newValue);
         }
+    }
+
+    onParentFieldChildError(errors: Record<string, FieldError>) {
+        const handledKeys = new Set<string>();
+
+        for (const [path, error] of Object.entries(errors)) {
+            const indexOfDot = path.indexOf('.');
+
+            if (indexOfDot > -1) {
+                const parent = path.substring(0, indexOfDot);
+                const child = path.substring(indexOfDot + 1);
+
+                const field = this.field(parent as any, undefined);
+
+                field.nextChildError(child, error);
+
+                handledKeys.add(parent);
+            } else {
+                const field = this.field(path as any, undefined);
+
+                field.nextError(error);
+
+                handledKeys.add(path);
+            }
+        }
+
+        this._fields.forEach((field, name) => {
+            if (!handledKeys.has(name)) {
+                field.nextError(null);
+                field.clearChildErrors();
+            }
+        });
     }
 
     destroy() {

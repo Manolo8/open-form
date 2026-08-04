@@ -25,14 +25,16 @@ export const Value: VFC<Props> = ({ name, render, defaultValue }) => {
     return render(value, field.next, error) ?? (null as any);
 };
 
+type Selector<T, P extends keyof T> = P | ((value: T) => T[P]);
+
 export const value = <T, P extends keyof T>(
     model: ModelExpSelector<T>,
-    selector: P | [P, T[P]],
+    selector: Selector<T, P> | [Selector<T, P>, T[P]],
     render: Render<T[P]>
 ) => {
     if (!Array.isArray(selector)) {
-        return <Value name={selector as string} render={render} />;
+        return <Value name={model(selector as any)} render={render} />;
     } else {
-        return <Value name={selector[0] as string} render={render} defaultValue={selector[1]} />;
+        return <Value name={model(selector[0] as any)} render={render} defaultValue={selector[1]} />;
     }
 };

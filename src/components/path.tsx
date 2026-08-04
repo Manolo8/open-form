@@ -1,5 +1,5 @@
 import { useSubscriberEffect, useSubscriberSelector } from 'open-observable';
-import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useField } from '../hooks/use-field';
 import { Field } from '../other/field';
 import FieldProviderFromArraySubscriber from '../other/field-provider-from-array-subscriber';
@@ -21,7 +21,7 @@ type Props<T, TKey extends keyof T> = T[TKey] extends any[]
           keySelector?: null;
       };
 
-export default function Path<T, TKey extends keyof T>(props: Props<T, TKey>) {
+export function Path<T, TKey extends keyof T>(props: Props<T, TKey>) {
     const name = props.path as unknown as string;
 
     const parentField = useField<T[TKey]>(name);
@@ -48,11 +48,17 @@ interface PathArrayProps<T> {
 function PathArray<T>({ field, render, keySelector, model }: PathArrayProps<T>): any {
     const [keys, setKeys] = useState<(string | number)[]>([]);
 
+    const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+    useEffect(() => () => clearTimeout(timeoutRef.current), []);
+
     useSubscriberEffect(
         field,
         useCallback(
             (value) => {
-                setTimeout(() => {
+                clearTimeout(timeoutRef.current);
+
+                timeoutRef.current = setTimeout(() => {
                     setKeys((old) => {
                         if (!Array.isArray(value)) return [];
 
@@ -65,7 +71,7 @@ function PathArray<T>({ field, render, keySelector, model }: PathArrayProps<T>):
                     });
                 }, 0);
             },
-            [field]
+            [field, keySelector]
         )
     );
 
@@ -84,7 +90,7 @@ interface PathArrayItemProps<T> {
 function PathArrayItem<T>({ field, index, render, model }: PathArrayItemProps<T>) {
     const memo = useMemo(
         () => new FieldProviderFromArraySubscriber<T>(field, field.readonly, field.next as any, index),
-        [field]
+        [field, index]
     );
 
     useEffect(() => () => memo.destroy(), [memo]);
@@ -105,3 +111,5 @@ function PathObject<T>({ field, render, model }: PathObjectProps<T>) {
 
     return <FieldContext.Provider value={memo as any}>{render(model)}</FieldContext.Provider>;
 }
+
+export default Path;

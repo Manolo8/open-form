@@ -32,10 +32,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     private _resolvers: (() => Promise<boolean>)[];
     private _successResolvers: ((input: TInput, output: TOutput) => void)[];
 
-    constructor(
-        submit: RefObject<FormSubmitHandle<TInput, TOutput>>,
-        errorTranslator?: ISubscriber<FormConfigType>
-    ) {
+    constructor(submit: RefObject<FormSubmitHandle<TInput, TOutput>>, errorTranslator?: ISubscriber<FormConfigType>) {
         this._submit = submit;
         this._errorTranslator = errorTranslator;
         this._loading = new Observable<boolean>(false);
@@ -60,6 +57,13 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         this.addResolver = this.addResolver.bind(this);
         this.lock = this.lock.bind(this);
     }
+
+    /**
+     * Runs after a successful submit and may return a {@link SuccessResult} to clear, reset or set the fields.
+     *
+     * Note the argument order is `(output, input)` here, while {@link addSuccessResolver} receives `(input, output)`.
+     * The difference is deliberate: both orders are the documented, published contract of their respective APIs.
+     */
     public setSuccess(callback: (output: TOutput, input: TInput) => void | SuccessResult<TInput>): void {
         this._success = callback;
     }
@@ -77,20 +81,23 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         this._autoSubmitCleanup = undefined;
 
         if (options !== false) {
-            let intervalId = 0;
+            let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
             const cleanup = this._fields.lastChange.subscribe(({ name, value, oldValue }) => {
                 const result = options.check?.(enhacedNameof, name, value, oldValue) ?? true;
 
                 if (result) {
-                    if (options.delay) intervalId = setTimeout(() => this.submit(), options.delay);
-                    else this.submit();
+                    if (options.delay) {
+                        if (timeoutId !== undefined) clearTimeout(timeoutId);
+
+                        timeoutId = setTimeout(() => this.submit(), options.delay);
+                    } else this.submit();
                 }
-            });
+            }, true);
 
             this._autoSubmitCleanup = () => {
                 cleanup();
-                clearInterval(intervalId);
+                if (timeoutId !== undefined) clearTimeout(timeoutId);
             };
         }
     }
@@ -116,7 +123,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     }
 
     public lock(value: boolean): void {
-        this._locks.next((old) => old + (value ? 1 : -1));
+        this._locks.next((old) => Math.max(0, old + (value ? 1 : -1)));
     }
 
     public setReadonly(readonly: boolean): void {
@@ -126,17 +133,45 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
     public addResolver(resolver: () => Promise<boolean>): CleanupCallback {
         this._resolvers.push(resolver);
 
-        return () => this._resolvers.splice(this._resolvers.indexOf(resolver), 1);
+        return () => {
+            const index = this._resolvers.indexOf(resolver);
+
+            if (index < 0) return;
+
+            this._resolvers.splice(index, 1);
+        };
     }
 
+    /**
+     * Registers an observer that runs on every successful submit, before the {@link setSuccess} callback.
+     *
+     * Note the argument order is `(input, output)` here, while {@link setSuccess} receives `(output, input)`.
+     * The difference is deliberate: both orders are the documented, published contract of their respective APIs.
+     */
     public addSuccessResolver(resolver: (input: TInput, output: TOutput) => void): CleanupCallback {
         this._successResolvers.push(resolver);
 
-        return () => this._successResolvers.splice(this._successResolvers.indexOf(resolver), 1);
+        return () => {
+            const index = this._successResolvers.indexOf(resolver);
+
+            if (index < 0) return;
+
+            this._successResolvers.splice(index, 1);
+        };
     }
 
     public field<TType extends keyof TInput>(name: TType, initial?: InitialValue): Field<TInput[TType]> {
         return this._fields.field(name as string, initial);
+    }
+
+    public async toObject(callResolvers: boolean = false): Promise<TInput | null> {
+        if (callResolvers) {
+            if (!(await this.resolve())) {
+                return null;
+            }
+        }
+
+        return this._fields.toObject() as TInput;
     }
 
     public async submit(): Promise<void> {
@@ -262,7 +297,7 @@ export class FormControl<TInput, TOutput> implements IFormConfigure<TInput, TOut
         }
     }
 
-    private resolve(): Promise<boolean> {
+    private async resolve(): Promise<boolean> {
         const resolvers = this._resolvers.map((x) => x());
 
         if (!resolvers.length) return Promise.resolve(true);

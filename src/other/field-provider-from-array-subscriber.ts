@@ -22,8 +22,6 @@ export default class FieldProviderFromArraySubscriber<T> implements IFieldProvid
         this.onParentFieldChange = this.onParentFieldChange.bind(this);
         this.destroy = this.destroy.bind(this);
 
-        this._current = _subscriber.current();
-
         this._destroyCallbacks.push(_subscriber.subscribe(this.onParentFieldChange));
     }
 
@@ -32,11 +30,24 @@ export default class FieldProviderFromArraySubscriber<T> implements IFieldProvid
     }
 
     createField<TType extends keyof T>(name: TType, initial?: InitialValue): Field<T[TType]> {
+        const key = name as unknown as string;
+
+        const item = this._current?.[this._index] as Record<string, any> | undefined;
+
+        const seeded = item != null && typeof item === 'object' && key in item;
+
         const field = new FieldControl<T[TType]>(initial, this._readonly);
 
-        this._fields.set(name as unknown as string, field);
+        this._fields.set(key, field);
 
-        field.subscribe((value) => this.onFieldChange(name as unknown as string, value));
+        //the item already holds a value for this key, use it instead of the initial one and
+        //ignore the first emission, otherwise the subscription would push the empty field
+        //value back into the item and wipe the data already present in the parent
+        if (seeded) {
+            field.next(item![key]);
+        }
+
+        field.subscribe((value) => this.onFieldChange(key, value), seeded);
 
         return field;
     }
@@ -49,6 +60,12 @@ export default class FieldProviderFromArraySubscriber<T> implements IFieldProvid
         const old = this._current;
 
         this._current = newValue;
+
+        if (newValue == null) {
+            this._fields.forEach((field) => field.reset());
+
+            return;
+        }
 
         if (newValue.length <= this._index || (old && newValue[this._index] === old[this._index])) {
             return;
@@ -85,9 +102,11 @@ export default class FieldProviderFromArraySubscriber<T> implements IFieldProvid
                 return old;
             }
 
-            const oldValues = old[this._index] as Record<string, any>;
+            const oldValues = (old[this._index] ?? {}) as Record<string, any>;
 
-            if (name in oldValues && oldValues[name] === value) {
+            //compare the values instead of the key presence, so resetting a field for a key the
+            //item does not have anymore does not reintroduce it as undefined
+            if (oldValues[name] === value) {
                 return old;
             }
 

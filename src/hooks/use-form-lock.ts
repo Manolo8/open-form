@@ -6,27 +6,27 @@ export function useFormLock(value: boolean | ISubscriber<boolean>): void {
     const control = useFormControl();
 
     useEffect(() => {
-        if (typeof value === 'boolean') {
-            if (!value) return;
-
-            control.lock(true);
-
-            return () => control.lock(false);
-        }
-
         let last = false;
 
-        const unsubscribe = value.subscribe((value) => {
-            if (value === last) return;
+        const lock = (next: boolean) => {
+            if (next === last) return;
 
-            last = value;
+            last = next;
 
-            control.lock(value);
-        });
+            control.lock(next);
+        };
+
+        if (typeof value === 'boolean') {
+            lock(value);
+
+            return () => lock(false);
+        }
+
+        const unsubscribe = value.subscribe(lock);
 
         return () => {
             unsubscribe();
-            if (last) control.lock(false);
+            lock(false);
         };
-    }, []);
+    }, [value, control]);
 }

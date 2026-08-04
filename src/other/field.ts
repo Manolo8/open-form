@@ -4,6 +4,7 @@ import { FieldError } from '../types/field-error';
 
 export class Field<T = any> extends Observable<T> {
     protected _error: Observable<FieldError>;
+    protected _childError: Observable<Record<string, FieldError>>;
     protected _changed: Observable<boolean>;
     protected _disabled: Observable<boolean>;
     protected _readonly: ISubscriber<boolean>;
@@ -17,6 +18,7 @@ export class Field<T = any> extends Observable<T> {
         this._error = new Observable<FieldError>(null);
         this._changed = new Observable<boolean>(false);
         this._disabled = new Observable<boolean>(false);
+        this._childError = new Observable<Record<string, FieldError>>({});
 
         this.next = this.next.bind(this);
     }
@@ -33,19 +35,31 @@ export class Field<T = any> extends Observable<T> {
         return this._readonly;
     }
 
+    public get error(): ISubscriber<FieldError> {
+        return this._error.asSubscriber();
+    }
+
+    public get childError(): ISubscriber<Record<string, FieldError>> {
+        return this._childError.asSubscriber();
+    }
+
     public nextError(error: FieldError) {
         this._error.next(error);
+    }
+
+    public nextChildError(name: string, error: FieldError) {
+        this._childError.next(old => ({...old, [name]: error}));
     }
 
     public nextDisabled(disabled: boolean) {
         this._disabled.next(disabled);
     }
 
-    public get error(): ISubscriber<FieldError> {
-        return this._error.asSubscriber();
+    public clearChildErrors() {
+        this._childError.next({});
     }
 
-    hasErrorHandler(): boolean {
+    public hasErrorHandler(): boolean {
         return this._error.watchingCount() > 0;
     }
 }

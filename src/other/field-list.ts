@@ -1,9 +1,9 @@
-import {InitialValue} from '../types/initial-value';
-import {FieldControl} from './field-control';
-import {Field} from './field';
-import {FieldError} from '../types/field-error';
-import {ISubscriber, Observable} from 'open-observable';
-import {LastChange} from '../types/last-change';
+import { InitialValue } from '../types/initial-value';
+import { FieldControl } from './field-control';
+import { Field } from './field';
+import { FieldError } from '../types/field-error';
+import { ISubscriber, Observable } from 'open-observable';
+import { LastChange } from '../types/last-change';
 
 export class FieldList {
     private readonly _fields: Map<string, FieldControl>;
@@ -15,7 +15,7 @@ export class FieldList {
         this._readonly = readonly;
         this._fields = new Map();
         this._changes = new Observable<number>(0);
-        this._lastChange = new Observable({name: '', value: '', oldValue: ''});
+        this._lastChange = new Observable({ name: '', value: '', oldValue: '' });
     }
 
     public reset() {
@@ -35,7 +35,7 @@ export class FieldList {
     }
 
     public get fieldsHandlingErrors(): string[] {
-        return Object.entries(this._fields)
+        return Array.from(this._fields.entries())
             .filter(([_, value]) => value.hasErrorHandler())
             .map(([key, _]) => key);
     }
@@ -57,13 +57,12 @@ export class FieldList {
     }
 
     private clear() {
-        const fields = Object.values(this._fields);
+        const fields = this._fields.values();
 
         for (const field of fields) {
-            const initial = field.initial;
-
-            field.next(typeof initial === 'function' ? initial() : initial);
+            field.clear();
             field.nextError(null);
+            field.clearChildErrors();
         }
     }
 
@@ -73,7 +72,7 @@ export class FieldList {
         this._fields.forEach((field, key) => {
             const value = field.current();
 
-            if (value === null) return;
+            if (value === undefined) return;
 
             building[key] = value;
         });
@@ -82,7 +81,21 @@ export class FieldList {
     }
 
     public error(errors: Record<string, FieldError>): void {
-        for (let entry of Object.entries(errors)) this.getOrCreate(entry[0], undefined).nextError(entry[1]);
+        for (let entry of Object.entries(errors)) {
+            const path = entry[0];
+
+            const indexOfDot = path.indexOf('.');
+
+            if (indexOfDot > -1) {
+                const parent = path.substring(0, indexOfDot);
+
+                const child = path.substring(indexOfDot + 1);
+
+                this.getOrCreate(parent, undefined).nextChildError(child, entry[1]);
+            } else {
+                this.getOrCreate(entry[0], undefined).nextError(entry[1]);
+            }
+        }
     }
 
     public field(name: string, defaultValue: InitialValue): Field {
@@ -98,7 +111,7 @@ export class FieldList {
 
         if (!controller) return undefined;
 
-        if (initial && controller.current() === undefined) controller.next(initial);
+        if (initial !== undefined && controller.current() === undefined) controller.next(initial);
 
         return controller;
     }
@@ -113,8 +126,8 @@ export class FieldList {
         );
 
         field.subscribe((value, oldValue) => {
-            this._lastChange.next({name, value, oldValue});
-        });
+            this._lastChange.next({ name, value, oldValue });
+        }, true);
 
         return field;
     }
